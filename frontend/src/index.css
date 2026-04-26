@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  
+  --color-primary: #6366f1;
+  --color-primary-dark: #4f46e5;
+  --color-secondary: #f43f5e;
+  
+  --color-bg-main: var(--bg-main);
+  --color-bg-card: var(--bg-card);
+  --color-bg-input: var(--bg-input);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-border-main: var(--border-main);
+  
+  /* Global Color Remapping for compatibility */
+  --color-slate-400: var(--text-muted);
+  --color-slate-300: var(--text-muted);
+  --color-slate-500: var(--text-muted);
+  --color-slate-900: var(--bg-input);
+  
+  --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
+}
+
+:root {
+  /* Dark Theme (Default) */
+  --bg-main: #0f172a;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-input: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-main: rgba(255, 255, 255, 0.1);
+}
+
+:root.light {
+  /* Light Theme */
+  --bg-main: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-main: rgba(0, 0, 0, 0.1);
+}
+
+@layer base {
+  body {
+    background-color: transparent;
+    color: var(--color-text-main);
+    font-family: var(--font-sans);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--color-text-main);
+  }
+}
+
+@layer components {
+  .glass {
+    background-color: var(--color-bg-card);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--color-border-main);
+  }
+
+  .glass-card {
+    background-color: var(--color-bg-card);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--color-border-main);
+    border-radius: 1.5rem;
+    box-shadow: var(--shadow-premium);
+  }
+  
+  .input-field {
+    background-color: var(--color-bg-input);
+    color: var(--color-text-main);
+    border: 1px solid var(--color-border-main);
+    border-radius: 1rem;
+    padding: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  
+  .input-field:focus {
+    border-color: var(--color-primary);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-muted);
+  border-radius: 9999px;
+  opacity: 0.5;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
