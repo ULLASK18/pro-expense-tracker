@@ -32,7 +32,7 @@ const AddExpensePage = () => {
   };
 
   return (
-    <div className="container mx-auto px-6 max-w-2xl">
+    <div className="container mx-auto px-6 max-w-2xl pt-24 pb-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

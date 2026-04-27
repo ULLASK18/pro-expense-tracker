@@ -29,7 +29,7 @@ function App() {
           <div className="min-h-screen transition-colors duration-300">
             <VideoBackground />
             <Navbar />
-          <div className="pt-24 pb-12">
+          <div>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
@@ -40,7 +40,7 @@ function App() {
               <Route path="/add-expense" element={<PrivateRoute><AddExpensePage /></PrivateRoute>} />
               <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
               
-              <Route path="/about" element={<div className="container mx-auto px-6 py-12 max-w-4xl">
+              <Route path="/about" element={<div className="container mx-auto px-6 py-12 pt-28 max-w-4xl">
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-12 text-center">
                   <h2 className="text-4xl font-black mb-6">Our Mission</h2>
                   <p className="text-slate-400 text-lg leading-relaxed">
@@ -49,7 +49,7 @@ function App() {
                   </p>
                 </motion.div>
               </div>} />
-              <Route path="/contact" element={<div className="container mx-auto px-6 py-12 max-w-2xl">
+              <Route path="/contact" element={<div className="container mx-auto px-6 py-12 pt-28 max-w-2xl">
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-12">
                   <h2 className="text-3xl font-black mb-8 text-center">Get in Touch</h2>
                   <form className="space-y-6">

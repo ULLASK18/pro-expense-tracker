@@ -78,7 +78,7 @@ const Reports = () => {
   if (loading) return <div className="text-center py-20">Analyzing your spending...</div>;
 
   return (
-    <div className="container mx-auto px-6 max-w-6xl">
+    <div className="container mx-auto px-6 max-w-6xl pt-24 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">

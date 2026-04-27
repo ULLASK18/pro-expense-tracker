@@ -113,7 +113,7 @@ const Dashboard = () => {
   const categories = ['All', 'Food', 'Travel', 'Bills', 'Shopping', 'Health', 'Entertainment', 'Education', 'Others'];
 
   return (
-    <div className="container mx-auto px-6 max-w-6xl">
+    <div className="container mx-auto px-6 max-w-6xl pt-24 pb-12">
       {/* Header Cards */}
       <div className="grid md:grid-cols-3 gap-6 mb-12">
         <div className="glass-card p-8 bg-gradient-to-br from-primary/20 to-transparent">

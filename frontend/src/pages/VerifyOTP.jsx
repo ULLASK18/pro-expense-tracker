@@ -116,7 +116,7 @@ const VerifyOTP = () => {
   if (!email) return null;
 
   return (
-    <div className="container mx-auto px-6 flex justify-center items-center min-h-[calc(100vh-8rem)]">
+    <div className="container mx-auto px-6 flex justify-center items-center min-h-screen">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

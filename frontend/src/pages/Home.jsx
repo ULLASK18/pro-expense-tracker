@@ -4,7 +4,7 @@ import { ArrowRight, Wallet, TrendingUp, ShieldCheck } from 'lucide-react';
 
 const Home = () => {
   return (
-    <div className="container mx-auto px-6">
+    <div className="container mx-auto px-6 pt-24">
       {/* Hero Section */}
       <div className="flex flex-col items-center text-center py-20">
         <motion.div
