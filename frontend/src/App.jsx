@@ -12,6 +12,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Reports from './pages/Reports';
 import AddExpensePage from './pages/AddExpensePage';
+import VerifyOTP from './pages/VerifyOTP';
 import VideoBackground from './components/Layout/VideoBackground';
 
 const PrivateRoute = ({ children }) => {
@@ -33,6 +34,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/verify-otp" element={<VerifyOTP />} />
               
               <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
               <Route path="/add-expense" element={<PrivateRoute><AddExpensePage /></PrivateRoute>} />

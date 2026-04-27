@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, UserPlus } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
+
+const GOOGLE_CLIENT_ID = '776030954621-ei2ffum5o8f2oamc9v1ebgmhk8ooq0lv.apps.googleusercontent.com';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -12,20 +14,79 @@ const Signup = () => {
     password: '',
   });
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const [loadingMsg, setLoadingMsg] = useState('Creating...');
+  const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
+
+  // Google sign-up callback
+  const handleGoogleResponse = useCallback(async (response) => {
+    try {
+      setLoading(true);
+      setLoadingMsg('Signing up with Google...');
+      await googleLogin(response.credential);
+      toast.success('Account created successfully!');
+      navigate('/dashboard');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Google sign-up failed');
+    } finally {
+      setLoading(false);
+      setLoadingMsg('Creating...');
+    }
+  }, [googleLogin, navigate]);
+
+  // Initialize Google Sign-In
+  useEffect(() => {
+    const initGoogle = () => {
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse,
+        });
+        window.google.accounts.id.renderButton(
+          document.getElementById('google-signin-btn-signup'),
+          { 
+            theme: 'filled_black',
+            size: 'large',
+            width: '100%',
+            shape: 'pill',
+            text: 'signup_with',
+          }
+        );
+      }
+    };
+
+    if (window.google?.accounts?.id) {
+      initGoogle();
+    } else {
+      const interval = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          initGoogle();
+          clearInterval(interval);
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, [handleGoogleResponse]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setLoadingMsg('Creating...');
+
+    const slowTimer = setTimeout(() => {
+      setLoadingMsg('Waking up server... hang tight!');
+    }, 4000);
+
     try {
-      await register(formData);
-      toast.success('Account created successfully!');
-      navigate('/dashboard');
+      const result = await register(formData);
+      toast.success('Verification code sent to your email!');
+      navigate('/verify-otp', { state: { email: formData.email } });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed');
     } finally {
+      clearTimeout(slowTimer);
       setLoading(false);
+      setLoadingMsg('Creating...');
     }
   };
 
@@ -39,6 +100,18 @@ const Signup = () => {
         <div className="text-center mb-10">
           <h2 className="text-3xl font-black mb-3">Create Account</h2>
           <p className="text-slate-400">Join thousands managing money better.</p>
+        </div>
+
+        {/* Google Sign-Up Button */}
+        <div className="mb-6">
+          <div id="google-signin-btn-signup" className="flex justify-center [&>div]:!w-full"></div>
+        </div>
+
+        {/* Divider */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex-1 h-px bg-white/10"></div>
+          <span className="text-slate-500 text-sm font-medium">or sign up with email</span>
+          <div className="flex-1 h-px bg-white/10"></div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -93,7 +166,14 @@ const Signup = () => {
             disabled={loading}
             className="w-full bg-primary hover:bg-primary-dark py-4 rounded-2xl font-black text-lg shadow-glow transition-all flex justify-center items-center gap-2 disabled:opacity-50"
           >
-            {loading ? 'Creating...' : <><UserPlus size={20} /> Sign Up</>}
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                {loadingMsg}
+              </div>
+            ) : (
+              <><UserPlus size={20} /> Sign Up</>
+            )}
           </button>
         </form>
 

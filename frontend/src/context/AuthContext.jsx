@@ -35,6 +35,25 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     const res = await api.post('/auth/register', userData);
+    // Registration now returns email, not token (OTP verification needed)
+    return res.data;
+  };
+
+  const verifyOTP = async (email, otp) => {
+    const res = await api.post('/auth/verify-otp', { email, otp });
+    localStorage.setItem('token', res.data.token);
+    setToken(res.data.token);
+    setUser(res.data.user);
+    return res.data;
+  };
+
+  const resendOTP = async (email) => {
+    const res = await api.post('/auth/resend-otp', { email });
+    return res.data;
+  };
+
+  const googleLogin = async (credential) => {
+    const res = await api.post('/auth/google', { credential });
     localStorage.setItem('token', res.data.token);
     setToken(res.data.token);
     setUser(res.data.user);
@@ -48,7 +67,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, token }}>
+    <AuthContext.Provider value={{ user, loading, login, register, verifyOTP, resendOTP, googleLogin, logout, token }}>
       {children}
     </AuthContext.Provider>
   );
