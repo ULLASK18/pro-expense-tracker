@@ -104,34 +104,45 @@ const Navbar = () => {
             exit="closed"
             variants={menuVariants}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 bg-dark/95 z-40 flex flex-col justify-center items-center gap-8 md:hidden"
+            className="fixed inset-0 z-[60] flex flex-col justify-center items-center gap-8 md:hidden"
+            style={{ backgroundColor: 'rgba(15, 23, 42, 0.98)' }}
           >
+            {/* Close button inside overlay */}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-6 right-6 p-3 text-slate-200 hover:text-primary transition-colors rounded-xl hover:bg-white/10"
+              aria-label="Close menu"
+            >
+              <X size={32} />
+            </button>
+
             <div className="flex flex-col items-center gap-6 text-center">
               {[...navLinks, ...(user ? authLinks : [])].map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
                   onClick={() => setIsOpen(false)}
-                  className="text-3xl font-bold text-slate-200 hover:text-primary transition-colors flex items-center gap-4"
+                  className="text-2xl font-bold text-slate-200 hover:text-primary transition-colors flex items-center gap-3"
                 >
-                  <link.icon size={32} />
+                  <link.icon size={26} />
                   {link.name}
                 </Link>
               ))}
               
               {!user && (
                 <>
-                  <Link to="/login" onClick={() => setIsOpen(false)} className="text-2xl font-bold text-slate-400">Login</Link>
-                  <Link to="/signup" onClick={() => setIsOpen(false)} className="text-2xl font-bold text-primary">Sign Up</Link>
+                  <div className="w-16 h-px bg-white/10 my-2"></div>
+                  <Link to="/login" onClick={() => setIsOpen(false)} className="text-xl font-bold text-slate-400 hover:text-primary transition-colors">Login</Link>
+                  <Link to="/signup" onClick={() => setIsOpen(false)} className="bg-primary hover:bg-primary-dark px-8 py-3 rounded-xl text-lg font-bold transition-all shadow-glow">Sign Up</Link>
                 </>
               )}
               
               {user && (
                 <button 
                   onClick={handleLogout}
-                  className="text-2xl font-bold text-secondary flex items-center gap-4 mt-4"
+                  className="text-xl font-bold text-secondary flex items-center gap-3 mt-4 hover:opacity-80 transition-opacity"
                 >
-                  <LogOut size={32} />
+                  <LogOut size={26} />
                   Logout
                 </button>
               )}
