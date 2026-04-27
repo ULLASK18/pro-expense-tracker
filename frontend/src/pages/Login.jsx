@@ -96,7 +96,7 @@ const Login = () => {
   };
 
   return (
-    <div className="container mx-auto px-6 flex justify-center items-center py-12 min-h-[calc(100vh-6rem)]">
+    <div className="container mx-auto px-6 flex justify-center items-center min-h-[calc(100vh-8rem)]">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
