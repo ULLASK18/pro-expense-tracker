@@ -91,20 +91,20 @@ const Signup = () => {
   };
 
   return (
-    <div className="container mx-auto px-6 flex justify-center items-center min-h-screen">
+    <div className="container mx-auto px-4 sm:px-6 flex justify-center items-center min-h-screen pt-24 pb-8">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="glass-card p-8 md:p-12 w-full max-w-lg"
+        className="glass-card p-5 sm:p-8 md:p-12 w-full max-w-lg"
       >
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-black mb-3">Create Account</h2>
-          <p className="text-slate-400">Join thousands managing money better.</p>
+        <div className="text-center mb-6 sm:mb-10">
+          <h2 className="text-2xl sm:text-3xl font-black mb-2 sm:mb-3">Create Account</h2>
+          <p className="text-slate-400 text-sm sm:text-base">Join thousands managing money better.</p>
         </div>
 
         {/* Google Sign-Up Button */}
-        <div className="mb-6">
-          <div id="google-signin-btn-signup" className="flex justify-center [&>div]:!w-full"></div>
+        <div className="mb-6 flex justify-center">
+          <div id="google-signin-btn-signup"></div>
         </div>
 
         {/* Divider */}
@@ -177,7 +177,7 @@ const Signup = () => {
           </button>
         </form>
 
-        <p className="text-center mt-10 text-slate-400">
+        <p className="text-center mt-6 sm:mt-10 text-slate-400 text-sm sm:text-base">
           Already have an account? <Link to="/login" className="text-primary font-bold hover:underline">Login</Link>
         </p>
       </motion.div>
