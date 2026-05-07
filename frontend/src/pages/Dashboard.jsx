@@ -7,58 +7,70 @@ import { Link } from 'react-router-dom';
 import Modal from '../components/UI/Modal';
 
 const Dashboard = () => {
-  const [expenses, setExpenses] = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
+  const [filterType, setFilterType] = useState('All'); // 'All', 'Income', 'Expense'
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedExpenseId, setSelectedExpenseId] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const [selectedType, setSelectedType] = useState(null);
 
   // Undo Logic State
-  const pendingDeletes = useRef({}); // Stores { id: timeoutId }
-  const backupExpenses = useRef({}); // Stores { id: expenseData }
+  const pendingDeletes = useRef({}); 
+  const backupTransactions = useRef({});
 
   useEffect(() => {
-    fetchExpenses();
+    fetchData();
   }, []);
 
-  const fetchExpenses = async () => {
+  const fetchData = async () => {
     try {
-      const res = await api.get('/expenses');
-      setExpenses(res.data.data);
+      const [expRes, incRes] = await Promise.all([
+        api.get('/expenses'),
+        api.get('/incomes')
+      ]);
+      
+      const exps = expRes.data.data.map(e => ({ ...e, type: 'expense' }));
+      const incs = incRes.data.data.map(i => ({ ...i, type: 'income' }));
+      
+      const all = [...exps, ...incs].sort((a, b) => new Date(b.date) - new Date(a.date));
+      setTransactions(all);
     } catch (err) {
-      toast.error('Failed to load expenses');
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteClick = (id) => {
-    setSelectedExpenseId(id);
+  const handleDeleteClick = (id, type) => {
+    setSelectedId(id);
+    setSelectedType(type);
     setIsModalOpen(true);
   };
 
   const handleConfirmDelete = async () => {
-    const id = selectedExpenseId;
-    const expenseToDelete = expenses.find(e => e._id === id);
+    const id = selectedId;
+    const type = selectedType;
+    const itemToDelete = transactions.find(t => t._id === id);
     
-    if (!expenseToDelete) return;
+    if (!itemToDelete) return;
 
     // 1. Hide from UI immediately
-    setExpenses(prev => prev.filter(e => e._id !== id));
+    setTransactions(prev => prev.filter(t => t._id !== id));
     setIsModalOpen(false);
-    backupExpenses.current[id] = expenseToDelete;
+    backupTransactions.current[id] = itemToDelete;
 
     // 2. Set 10-second timeout for actual API call
     const timeoutId = setTimeout(async () => {
       try {
-        await api.delete(`/expenses/${id}`);
+        const endpoint = type === 'expense' ? `/expenses/${id}` : `/incomes/${id}`;
+        await api.delete(endpoint);
         delete pendingDeletes.current[id];
-        delete backupExpenses.current[id];
+        delete backupTransactions.current[id];
       } catch (err) {
-        // If API fails, we might want to put it back, but for now just log
         console.error('Final delete failed', err);
       }
     }, 10000);
@@ -68,7 +80,7 @@ const Dashboard = () => {
     // 3. Show Toast with Undo button
     toast.info(
       <div className="flex items-center justify-between gap-4">
-        <span>Expense deleted</span>
+        <span>{type === 'expense' ? 'Expense' : 'Income'} deleted</span>
         <button 
           onClick={() => handleUndo(id)}
           className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg font-bold transition-all text-xs"
@@ -81,56 +93,68 @@ const Dashboard = () => {
   };
 
   const handleUndo = (id) => {
-    // 1. Cancel the pending API call
     if (pendingDeletes.current[id]) {
       clearTimeout(pendingDeletes.current[id]);
       delete pendingDeletes.current[id];
     }
 
-    // 2. Restore to UI
-    const restoredExpense = backupExpenses.current[id];
-    if (restoredExpense) {
-      setExpenses(prev => {
-        // Check if already restored to avoid duplicates
-        if (prev.find(e => e._id === id)) return prev;
-        return [restoredExpense, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const restored = backupTransactions.current[id];
+    if (restored) {
+      setTransactions(prev => {
+        if (prev.find(t => t._id === id)) return prev;
+        return [restored, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date));
       });
-      delete backupExpenses.current[id];
+      delete backupTransactions.current[id];
     }
 
     toast.dismiss();
     toast.success('Restored!');
   };
 
-  const filteredExpenses = expenses.filter(exp => {
-    const matchesSearch = exp.text.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === 'All' || exp.category === filterCategory;
-    return matchesSearch && matchesCategory;
+  const filteredTransactions = transactions.filter(t => {
+    const matchesSearch = t.text.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filterCategory === 'All' || t.category === filterCategory;
+    const matchesType = filterType === 'All' || (filterType === 'Expense' ? t.type === 'expense' : t.type === 'income');
+    return matchesSearch && matchesCategory && matchesType;
   });
 
-  const totalAmount = filteredExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
+  const balance = totalIncome - totalExpense;
 
-  const categories = ['All', 'Food', 'Travel', 'Bills', 'Shopping', 'Health', 'Entertainment', 'Education', 'Others'];
+  const categories = ['All', 'Food', 'Travel', 'Bills', 'Shopping', 'Health', 'Entertainment', 'Education', 'Salary', 'Freelance', 'Investment', 'Others'];
 
   return (
     <div className="container mx-auto px-6 max-w-6xl pt-24 pb-12">
       {/* Header Cards */}
       <div className="grid md:grid-cols-3 gap-6 mb-12">
-        <div className="glass-card p-8 bg-gradient-to-br from-primary/20 to-transparent">
+        <div className={`glass-card p-8 bg-gradient-to-br transition-all duration-500 ${balance >= 0 ? 'from-green-500/20' : 'from-red-500/20'} to-transparent`}>
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-primary/20 rounded-2xl text-primary"><IndianRupee size={24} /></div>
-            <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Total Spending</span>
+            <div className={`p-3 rounded-2xl ${balance >= 0 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+              <IndianRupee size={24} />
+            </div>
+            <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Total Balance</span>
           </div>
-          <h2 className="text-4xl font-black">₹{totalAmount.toLocaleString()}</h2>
+          <h2 className="text-4xl font-black">₹{balance.toLocaleString()}</h2>
           <p className="text-text-muted text-sm mt-2 flex items-center gap-1">
-            <ArrowUpRight size={16} className="text-secondary" /> From {filteredExpenses.length} transactions
+            {balance >= 0 ? <ArrowUpRight size={16} className="text-green-500" /> : <ArrowDownRight size={16} className="text-red-500" />}
+            Across {transactions.length} items
           </p>
         </div>
 
-        <div className="md:col-span-2 glass-card p-8 flex flex-col justify-center items-center text-center">
-          <h3 className="text-xl font-bold mb-4 text-text-muted">Ready to track more?</h3>
-          <Link to="/add-expense" className="bg-primary text-white px-8 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-primary-dark transition-all shadow-glow">
-            <Plus size={20} /> Add New Expense
+        <div className="glass-card p-8 bg-gradient-to-br from-green-500/10 to-transparent">
+          <span className="text-xs font-bold text-text-muted uppercase tracking-wider block mb-2">Total Income</span>
+          <h2 className="text-3xl font-black text-green-500">₹{totalIncome.toLocaleString()}</h2>
+          <Link to="/add-income" className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-green-500 hover:underline">
+            <Plus size={14} /> Add Income
+          </Link>
+        </div>
+
+        <div className="glass-card p-8 bg-gradient-to-br from-primary/10 to-transparent">
+          <span className="text-xs font-bold text-text-muted uppercase tracking-wider block mb-2">Total Expense</span>
+          <h2 className="text-3xl font-black text-primary">₹{totalExpense.toLocaleString()}</h2>
+          <Link to="/add-expense" className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-primary hover:underline">
+            <Plus size={14} /> Add Expense
           </Link>
         </div>
       </div>
@@ -149,6 +173,19 @@ const Dashboard = () => {
         </div>
         
         <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+          <div className="flex bg-white/5 p-1 rounded-xl gap-1 mr-2">
+            {['All', 'Income', 'Expense'].map(type => (
+              <button
+                key={type}
+                onClick={() => setFilterType(type)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  filterType === type ? 'bg-primary text-white shadow-glow' : 'text-text-muted hover:bg-white/5'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
           <Filter size={18} className="text-text-muted shrink-0" />
           {categories.map(cat => (
             <button
@@ -166,42 +203,44 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Expense List */}
+      {/* Transaction List */}
       <div className="space-y-4">
         {loading ? (
           [1,2,3].map(i => <div key={i} className="h-24 glass-card animate-pulse" />)
-        ) : filteredExpenses.length === 0 ? (
+        ) : filteredTransactions.length === 0 ? (
           <div className="text-center py-20 glass-card">
-            <p className="text-slate-500">No expenses found. Time to go shopping?</p>
+            <p className="text-slate-500">No transactions found.</p>
           </div>
         ) : (
           <AnimatePresence>
-            {filteredExpenses.map((exp) => (
+            {filteredTransactions.map((t) => (
               <motion.div
-                key={exp._id}
+                key={t._id}
                 layout
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="glass-card p-6 flex flex-wrap items-center justify-between gap-4 group"
+                className={`glass-card p-6 flex flex-wrap items-center justify-between gap-4 group border-l-4 ${t.type === 'expense' ? 'border-primary/50' : 'border-green-500/50'}`}
               >
                 <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 glass bg-white/5 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                    <Tag size={24} />
+                  <div className={`w-14 h-14 glass bg-white/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform ${t.type === 'expense' ? 'text-primary' : 'text-green-500'}`}>
+                    {t.type === 'expense' ? <ArrowDownRight size={24} /> : <ArrowUpRight size={24} />}
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold">{exp.text}</h4>
+                    <h4 className="text-lg font-bold">{t.text}</h4>
                     <div className="flex items-center gap-4 text-xs text-text-muted mt-1 font-medium">
-                      <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(exp.date).toLocaleDateString()}</span>
-                      <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-lg">{exp.category}</span>
+                      <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(t.date).toLocaleDateString()}</span>
+                      <span className={`px-2 py-0.5 rounded-lg ${t.type === 'expense' ? 'bg-primary/10 text-primary' : 'bg-green-500/10 text-green-500'}`}>{t.category}</span>
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-6">
-                  <span className="text-2xl font-black">₹{exp.amount.toLocaleString()}</span>
+                  <span className={`text-2xl font-black ${t.type === 'expense' ? 'text-white' : 'text-green-500'}`}>
+                    {t.type === 'expense' ? '-' : '+'}₹{t.amount.toLocaleString()}
+                  </span>
                   <button 
-                    onClick={() => handleDeleteClick(exp._id)}
+                    onClick={() => handleDeleteClick(t._id, t.type)}
                     className="p-3 hover:bg-secondary/10 text-text-muted hover:text-secondary rounded-xl transition-colors"
                   >
                     <Trash2 size={20} />
@@ -218,7 +257,7 @@ const Dashboard = () => {
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleConfirmDelete}
         title="Confirm Delete"
-        message="Are you sure you want to delete this expense? This action cannot be undone."
+        message={`Are you sure you want to delete this ${selectedType}? This action cannot be undone.`}
       />
     </div>
   );

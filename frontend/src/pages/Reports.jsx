@@ -7,17 +7,22 @@ import api from '../utils/api';
 const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#3b82f6'];
 
 const Reports = () => {
-  const [data, setData] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [incomes, setIncomes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchExpenses();
+    fetchData();
   }, []);
 
-  const fetchExpenses = async () => {
+  const fetchData = async () => {
     try {
-      const res = await api.get('/expenses');
-      setData(res.data.data);
+      const [expRes, incRes] = await Promise.all([
+        api.get('/expenses'),
+        api.get('/incomes')
+      ]);
+      setExpenses(expRes.data.data);
+      setIncomes(incRes.data.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -26,14 +31,20 @@ const Reports = () => {
   };
 
   const downloadCSV = () => {
-    if (data.length === 0) return;
+    const allData = [
+      ...expenses.map(e => ({ ...e, type: 'Expense' })),
+      ...incomes.map(i => ({ ...i, type: 'Income' }))
+    ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    const headers = ['Date', 'Description', 'Amount', 'Category'];
-    const csvRows = data.map(exp => [
-      new Date(exp.date).toLocaleDateString(),
-      `"${exp.text.replace(/"/g, '""')}"`, // Escape quotes
-      exp.amount,
-      exp.category
+    if (allData.length === 0) return;
+
+    const headers = ['Date', 'Type', 'Description', 'Amount', 'Category'];
+    const csvRows = allData.map(item => [
+      new Date(item.date).toLocaleDateString(),
+      item.type,
+      `"${item.text.replace(/"/g, '""')}"`,
+      item.amount,
+      item.category
     ]);
 
     const csvContent = [
@@ -45,15 +56,15 @@ const Reports = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `expensify_report_${new Date().toLocaleDateString()}.csv`);
+    link.setAttribute('download', `expensify_full_report_${new Date().toLocaleDateString()}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // Process data for Category Pie Chart
-  const categoryData = data.reduce((acc, curr) => {
+  // Process data for Category Pie Chart (Expenses only for breakdown)
+  const categoryData = expenses.reduce((acc, curr) => {
     const existing = acc.find(item => item.name === curr.category);
     if (existing) {
       existing.value += curr.amount;
@@ -63,19 +74,27 @@ const Reports = () => {
     return acc;
   }, []);
 
-  // Process data for Monthly Bar Chart
-  const monthlyData = data.reduce((acc, curr) => {
-    const month = new Date(curr.date).toLocaleString('default', { month: 'short' });
-    const existing = acc.find(item => item.month === month);
-    if (existing) {
-      existing.amount += curr.amount;
-    } else {
-      acc.push({ month, amount: curr.amount });
-    }
-    return acc;
-  }, []).reverse(); // Reverse to show chronological order if needed (simpler version)
+  // Process data for Monthly Comparison
+  const months = [...new Set([
+    ...expenses.map(e => new Date(e.date).toLocaleString('default', { month: 'short' })),
+    ...incomes.map(i => new Date(i.date).toLocaleString('default', { month: 'short' }))
+  ])];
 
-  if (loading) return <div className="text-center py-20">Analyzing your spending...</div>;
+  const monthlyComparisonData = months.map(month => {
+    const exp = expenses
+      .filter(e => new Date(e.date).toLocaleString('default', { month: 'short' }) === month)
+      .reduce((acc, c) => acc + c.amount, 0);
+    const inc = incomes
+      .filter(i => new Date(i.date).toLocaleString('default', { month: 'short' }) === month)
+      .reduce((acc, c) => acc + c.amount, 0);
+    return { month, expense: exp, income: inc };
+  });
+
+  if (loading) return <div className="text-center py-20">Analyzing your financials...</div>;
+
+  const totalExp = expenses.reduce((acc, c) => acc + c.amount, 0);
+  const totalInc = incomes.reduce((acc, c) => acc + c.amount, 0);
+  const savingsRate = totalInc > 0 ? ((totalInc - totalExp) / totalInc * 100).toFixed(1) : 0;
 
   return (
     <div className="container mx-auto px-6 max-w-6xl pt-24 pb-12">
@@ -84,7 +103,7 @@ const Reports = () => {
           <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
             <TrendingUp size={28} />
           </div>
-          <h2 className="text-4xl font-black">Analytics & Reports</h2>
+          <h2 className="text-4xl font-black">Financial Analytics</h2>
         </div>
         
         <button 
@@ -92,12 +111,12 @@ const Reports = () => {
           className="bg-bg-card hover:bg-white/10 border border-border-main px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all group"
         >
           <Download size={20} className="group-hover:translate-y-0.5 transition-transform" />
-          Export CSV
+          Export All Data
         </button>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Category Breakdown */}
+        {/* Expense Category Breakdown */}
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -105,7 +124,7 @@ const Reports = () => {
         >
           <div className="flex items-center gap-3 mb-8">
             <PieIcon size={20} className="text-primary" />
-            <h3 className="text-xl font-bold">Category Distribution</h3>
+            <h3 className="text-xl font-bold">Expense Breakdown</h3>
           </div>
           
           <div className="h-80 w-full">
@@ -134,20 +153,20 @@ const Reports = () => {
           </div>
         </motion.div>
 
-        {/* Monthly Spending */}
+        {/* Income vs Expense Monthly */}
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           className="glass-card p-8"
         >
           <div className="flex items-center gap-3 mb-8">
-            <BarChart3 size={20} className="text-secondary" />
-            <h3 className="text-xl font-bold">Monthly Trend</h3>
+            <BarChart3 size={20} className="text-green-500" />
+            <h3 className="text-xl font-bold">Income vs Expense</h3>
           </div>
           
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData}>
+              <BarChart data={monthlyComparisonData}>
                 <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip 
@@ -155,7 +174,9 @@ const Reports = () => {
                   contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
                   itemStyle={{ color: '#fff' }}
                 />
-                <Bar dataKey="amount" fill="#6366f1" radius={[8, 8, 0, 0]} />
+                <Legend />
+                <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" fill="#6366f1" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -164,23 +185,25 @@ const Reports = () => {
 
       {/* Stats Summary Section */}
       <div className="mt-12 glass-card p-8 bg-white/5">
-        <h4 className="text-lg font-bold mb-4">Insights</h4>
+        <h4 className="text-lg font-bold mb-4">Financial Health Insights</h4>
         <div className="grid md:grid-cols-3 gap-6">
           <div className="p-6 bg-dark rounded-2xl border border-white/5">
-            <p className="text-slate-500 text-sm mb-1">Most Spent Category</p>
-            <p className="text-2xl font-black text-primary">
-              {categoryData.sort((a,b) => b.value - a.value)[0]?.name || 'N/A'}
+            <p className="text-slate-500 text-sm mb-1">Savings Rate</p>
+            <p className={`text-2xl font-black ${savingsRate >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {savingsRate}%
             </p>
           </div>
           <div className="p-6 bg-dark rounded-2xl border border-white/5">
-            <p className="text-slate-500 text-sm mb-1">Average Transaction</p>
+            <p className="text-slate-500 text-sm mb-1">Total Savings</p>
             <p className="text-2xl font-black text-white">
-              ₹{(data.reduce((acc, c) => acc + c.amount, 0) / (data.length || 1)).toFixed(0)}
+              ₹{(totalInc - totalExp).toLocaleString()}
             </p>
           </div>
           <div className="p-6 bg-dark rounded-2xl border border-white/5">
-            <p className="text-slate-500 text-sm mb-1">Active Months</p>
-            <p className="text-2xl font-black text-secondary">{monthlyData.length}</p>
+            <p className="text-slate-500 text-sm mb-1">Avg. Monthly Income</p>
+            <p className="text-2xl font-black text-green-500">
+              ₹{(totalInc / (months.length || 1)).toFixed(0)}
+            </p>
           </div>
         </div>
       </div>

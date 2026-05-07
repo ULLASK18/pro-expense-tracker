@@ -26,6 +26,7 @@ app.use(cors({
 // Mount routers
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/expenses', require('./routes/expenseRoutes'));
+app.use('/api/incomes', require('./routes/incomeRoutes'));
 
 // Health check
 app.get('/', (req, res) => res.json({ status: 'Pro Expense Tracker API is running' }));

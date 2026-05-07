@@ -26,6 +26,7 @@ const Navbar = () => {
 
   const authLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Add Income', path: '/add-income', icon: PlusCircle },
     { name: 'Add Expense', path: '/add-expense', icon: PlusCircle },
     { name: 'Reports', path: '/reports', icon: PieChart },
   ];

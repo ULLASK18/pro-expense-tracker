@@ -12,6 +12,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Reports from './pages/Reports';
 import AddExpensePage from './pages/AddExpensePage';
+import AddIncomePage from './pages/AddIncomePage';
 import VerifyOTP from './pages/VerifyOTP';
 import VideoBackground from './components/Layout/VideoBackground';
 
@@ -38,6 +39,7 @@ function App() {
               
               <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
               <Route path="/add-expense" element={<PrivateRoute><AddExpensePage /></PrivateRoute>} />
+              <Route path="/add-income" element={<PrivateRoute><AddIncomePage /></PrivateRoute>} />
               <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
               
               <Route path="/about" element={<div className="container mx-auto px-6 py-12 pt-28 max-w-4xl">
